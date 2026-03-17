@@ -4,42 +4,54 @@ import { fuzzyMatch, normalizeHeader } from "./fuzzy";
 function findSourceHeader(
   targetLabel: string,
   aliases: string[],
-  sourceHeaders: string[],
-): { header: string; confidence: ColumnMapping["confidence"] } | null {
+  headers: string[],
+  rawHeaders: string[],
+): {
+  header: string;
+  index: number;
+  confidence: ColumnMapping["confidence"];
+} | null {
   const candidates = [targetLabel, ...aliases];
 
-  // 1. Exact match
   for (const candidate of candidates) {
-    const match = sourceHeaders.find((h) => h === candidate);
-    if (match) return { header: match, confidence: "exact" };
+    const index = rawHeaders.findIndex((h) => h === candidate);
+    if (index !== -1)
+      return { header: headers[index], index, confidence: "exact" };
   }
 
-  // 2. Normalized exact match
   for (const candidate of candidates) {
-    const match = sourceHeaders.find(
+    const index = rawHeaders.findIndex(
       (h) => normalizeHeader(h) === normalizeHeader(candidate),
     );
-    if (match) return { header: match, confidence: "exact" };
+    if (index !== -1)
+      return { header: headers[index], index, confidence: "exact" };
   }
 
-  // 3. Fuzzy match
   for (const candidate of candidates) {
-    const match = sourceHeaders.find((h) => fuzzyMatch(h, candidate));
-    if (match) return { header: match, confidence: "fuzzy" };
+    const index = rawHeaders.findIndex((h) => fuzzyMatch(h, candidate));
+    if (index !== -1)
+      return { header: headers[index], index, confidence: "fuzzy" };
   }
 
   return null;
 }
 
 export function mapColumns(file: ParsedFile, schema: Schema): ColumnMapping[] {
-  return schema.columns.map((col) => {
-    const result = findSourceHeader(col.label, col.aliases ?? [], file.headers);
+  return schema.columns.map((col, targetIndex) => {
+    const result = findSourceHeader(
+      col.label,
+      col.aliases ?? [],
+      file.headers,
+      file.rawHeaders,
+    );
 
     if (!result) {
       return {
         targetKey: col.key,
         targetLabel: col.label,
         sourceHeader: null,
+        sourceIndex: null,
+        targetIndex,
         confidence: "missing",
       };
     }
@@ -48,6 +60,8 @@ export function mapColumns(file: ParsedFile, schema: Schema): ColumnMapping[] {
       targetKey: col.key,
       targetLabel: col.label,
       sourceHeader: result.header,
+      sourceIndex: result.index,
+      targetIndex,
       confidence: result.confidence,
     };
   });

@@ -17,10 +17,13 @@ export interface ColumnMapping {
   targetKey: string;
   targetLabel: string;
   sourceHeader: string | null;
+  sourceIndex: number | null;
+  targetIndex: number;
   confidence: MatchConfidence;
 }
 
 export interface ParsedFile {
-  headers: string[];
+  headers: string[]; // headers avec suffixes pour doublons
+  rawHeaders: string[]; // headers originaux sans modification
   rows: Record<string, string>[];
 }

@@ -1,5 +1,9 @@
 import { useCallback, useState } from "react";
 import { FileDropzone } from "./components/FileDropzone";
+import { ProcessingCard } from "./components/ProcessingCard";
+import { MappingResultCard } from "./components/MappingResultCard";
+import { MovedColumnsCard } from "./components/MovedColumnsCard";
+import { ErrorCard } from "./components/ErrorCard";
 import { parseXlsx } from "./lib/parser";
 import { mapColumns } from "./lib/mapper";
 import { exportXlsx } from "./lib/exporter";
@@ -36,6 +40,9 @@ export default function App() {
   };
 
   const handleFile = useCallback(async (file: File) => {
+    const parsed = await parseXlsx(file);
+    console.log("rawHeaders[0]:", parsed.rawHeaders[0]);
+    console.log("headers[0]:", parsed.headers[0]);
     setState("processing");
     setSteps(STEPS.map((s) => ({ ...s, status: "pending" })));
     setFileName(file.name);
@@ -86,12 +93,6 @@ export default function App() {
     setError(null);
   };
 
-  const badgeClass = (confidence: ColumnMapping["confidence"]) => {
-    if (confidence === "exact") return "bg-green-100 text-green-800";
-    if (confidence === "fuzzy") return "bg-amber-100 text-amber-800";
-    return "bg-red-100 text-red-800";
-  };
-
   return (
     <div className="min-h-screen bg-white flex items-start justify-center p-8 pt-16">
       <div className="w-full max-w-xl flex flex-col gap-6">
@@ -110,98 +111,27 @@ export default function App() {
         {state === "idle" && <FileDropzone onFileParsed={handleFile} />}
 
         {state === "processing" && (
-          <div className="border border-gray-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium text-gray-700">
-                {fileName}
-              </span>
-            </div>
-            <div className="flex flex-col gap-3">
-              {steps.map((step, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm">
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors duration-300 ${
-                      step.status === "done" ? "bg-green-600" : "bg-gray-300"
-                    }`}
-                  />
-                  <span
-                    className={`transition-colors duration-300 ${
-                      step.status === "done" ? "text-gray-900" : "text-gray-400"
-                    }`}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ProcessingCard fileName={fileName} steps={steps} />
         )}
 
         {state === "done" && (
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2.5">
-              <div className="w-2 h-2 rounded-full bg-green-600 flex-shrink-0" />
-              <span className="text-sm font-medium text-gray-900">
-                Traitement complété
-              </span>
-              <span className="ml-auto text-xs text-gray-400">
-                {mappings.length} colonnes mappées
-              </span>
-            </div>
-
-            <div className="px-5 py-4 flex flex-col gap-2.5">
-              {mappings.map((m) => (
-                <div
-                  key={m.targetKey}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <span className="font-mono text-xs text-gray-400 flex-1 truncate">
-                    {m.sourceHeader ?? "—"}
-                  </span>
-                  <svg
-                    className="w-3.5 h-3.5 text-gray-300 flex-shrink-0"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  >
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                    <polyline points="12 5 19 12 12 19" />
-                  </svg>
-                  <span className="text-gray-900 flex-1">{m.targetLabel}</span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${badgeClass(m.confidence)}`}
-                  >
-                    {m.confidence}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="px-5 py-3.5 border-t border-gray-100 flex items-center gap-3">
-              <button
-                onClick={handleReset}
-                className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-transparent border-none p-0"
-              >
-                Importer un autre fichier
-              </button>
-            </div>
-          </div>
+          <>
+            <MappingResultCard mappings={mappings} />
+            <MovedColumnsCard mappings={mappings} />
+            <button
+              onClick={handleReset}
+              className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-transparent border-none p-0 text-left"
+            >
+              Importer un autre fichier
+            </button>
+          </>
         )}
 
         {state === "error" && (
-          <div className="border border-red-200 bg-red-50 rounded-xl p-5">
-            <p className="text-sm font-medium text-red-800 mb-1">
-              Erreur lors du traitement
-            </p>
-            <p className="text-sm text-red-600 mb-4">{error}</p>
-            <button
-              onClick={handleReset}
-              className="text-sm text-red-700 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-100 transition-colors cursor-pointer bg-transparent"
-            >
-              Réessayer
-            </button>
-          </div>
+          <ErrorCard
+            message={error ?? "Erreur inconnue"}
+            onReset={handleReset}
+          />
         )}
       </div>
     </div>
