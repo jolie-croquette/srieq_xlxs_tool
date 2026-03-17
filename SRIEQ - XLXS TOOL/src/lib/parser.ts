@@ -1,4 +1,4 @@
-import xlsx from "xlsx";
+import * as XLSX from "xlsx";
 import type { ParsedFile } from "../types";
 
 export function parseXlsx(file: File): Promise<ParsedFile> {
@@ -10,11 +10,11 @@ export function parseXlsx(file: File): Promise<ParsedFile> {
         const data = e.target?.result;
         if (!data) throw new Error("Fichier vide ou illisible");
 
-        const workbook = xlsx.read(data, { type: "array" });
+        const workbook = XLSX.read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
 
-        const rows = xlsx.utils.sheet_to_json<Record<string, string>>(sheet, {
+        const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
           defval: "",
         });
 
