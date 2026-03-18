@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+@source inline("bg-amber-50");
+@source inline("bg-green-50");
+@source inline("bg-red-50");
+@source inline("text-amber-700");
+@source inline("text-green-700");
+@source inline("text-red-500");
+@source inline("text-gray-700");
+@source inline("border-l");
+@source inline("border-gray-100");
+@import "tailwindcss";
+
+@source inline("bg-amber-50");
+@source inline("bg-green-50");
+@source inline("bg-red-50");
+@source inline("text-amber-700");
+@source inline("text-green-700");
+@source inline("text-red-500");
+@source inline("text-gray-700");
+@source inline("border-l");
+@source inline("border-gray-100");

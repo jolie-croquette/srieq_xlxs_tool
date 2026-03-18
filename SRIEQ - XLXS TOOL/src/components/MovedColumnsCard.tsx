@@ -7,6 +7,7 @@ interface MovedColumnsCardProps {
 }
 
 type FilterType = "all" | "moved" | "missing" | "same";
+
 type RowStatus = "same" | "moved" | "missing";
 
 interface DiffRow {
@@ -96,6 +97,7 @@ export function MovedColumnsCard({ mappings }: MovedColumnsCardProps) {
 
       {/* Toolbar */}
       <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-3 flex-wrap">
+        {/* Filtres */}
         <div className="flex items-center gap-1.5">
           {filterButtons.map((btn) => (
             <button
@@ -120,6 +122,7 @@ export function MovedColumnsCard({ mappings }: MovedColumnsCardProps) {
           ))}
         </div>
 
+        {/* Search */}
         <div className="ml-auto flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:border-gray-300 transition-colors">
           <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
           <input
@@ -157,7 +160,7 @@ export function MovedColumnsCard({ mappings }: MovedColumnsCardProps) {
               <div
                 className={`px-4 py-2 flex items-center gap-3 ${rowBg[row.status].left}`}
               >
-                <span className="text-gray-300 w-8 text-right shrink-0">
+                <span className="text-gray-300 w-5 text-right shrink-0">
                   {row.sourceIndex !== null ? toExcelCol(row.sourceIndex) : "—"}
                 </span>
                 <span className={rowText[row.status].left}>
@@ -167,7 +170,7 @@ export function MovedColumnsCard({ mappings }: MovedColumnsCardProps) {
               <div
                 className={`px-4 py-2 flex items-center gap-3 ${rowBg[row.status].right}`}
               >
-                <span className="text-gray-300 w-8 text-right shrink-0">
+                <span className="text-gray-300 w-5 text-right shrink-0">
                   {toExcelCol(row.targetIndex)}
                 </span>
                 <span className={rowText[row.status].right}>
