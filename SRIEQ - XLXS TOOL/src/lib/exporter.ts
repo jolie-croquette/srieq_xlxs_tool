@@ -6,35 +6,41 @@ function stripSuffix(header: string): string {
 }
 
 export function exportXlsx(file: ParsedFile, mappings: ColumnMapping[]): void {
-  const validMappings = mappings.filter(
-    (m): m is ColumnMapping & { sourceHeader: string } =>
-      m.sourceHeader !== null,
+  // Index source utilisés par le schéma
+  const usedSourceIndexes = new Set(
+    mappings
+      .filter((m) => m.sourceIndex !== null)
+      .map((m) => m.sourceIndex as number),
   );
 
-  // Colonnes du schéma en premier (dans l'ordre cible)
-  const schemaHeaders = validMappings.map((m) => m.sourceHeader);
+  // Colonnes source non utilisées par le schéma (par index)
+  const remainingColumns = file.headers
+    .map((h, i) => ({ header: h, index: i }))
+    .filter(({ index }) => !usedSourceIndexes.has(index));
 
-  // Reste des colonnes source non incluses dans le schéma
-  const remainingHeaders = file.headers.filter(
-    (h) => !schemaHeaders.includes(h),
-  );
+  // Ordre final : schéma en premier, reste après
+  const orderedColumns: { header: string | null; label: string }[] = [
+    ...mappings.map((m) => ({
+      header: m.sourceHeader,
+      label: m.sourceHeader ? stripSuffix(m.sourceHeader) : m.targetLabel,
+    })),
+    ...remainingColumns.map(({ header }) => ({
+      header,
+      label: stripSuffix(header),
+    })),
+  ];
 
-  const allHeaders = [...schemaHeaders, ...remainingHeaders];
+  // Rebuild les headers dans l'ordre sans suffixes
+  const orderedLabels = orderedColumns.map((col) => col.label);
 
-  const rows = file.rows.map((row) => {
-    const mappedRow: Record<string, string> = {};
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    orderedLabels,
+    ...file.rows.map((row) =>
+      orderedColumns.map((col) => (col.header ? (row[col.header] ?? "") : "")),
+    ),
+  ]);
 
-    for (const header of allHeaders) {
-      const cleanLabel = stripSuffix(header);
-      mappedRow[cleanLabel] = row[header] ?? "";
-    }
-
-    return mappedRow;
-  });
-
-  const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-
   XLSX.writeFile(workbook, "output.xlsx");
 }

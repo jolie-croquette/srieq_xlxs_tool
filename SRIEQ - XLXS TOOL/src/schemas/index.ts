@@ -285,6 +285,11 @@ export const schema: Schema = {
     },
     { key: "sujet", label: "Sujet", required: false },
     {
+      key: "nom_personne_rencontree",
+      label: "Nom de la personne rencontrée",
+      required: false,
+    },
+    {
       key: "personne_rencontree",
       label: "Personne rencontrée",
       required: false,
@@ -541,6 +546,7 @@ export const schema: Schema = {
       label: "registered tax id description",
       required: false,
     },
+
     { key: "booking_signer", label: "booking signer", required: false },
   ],
 };

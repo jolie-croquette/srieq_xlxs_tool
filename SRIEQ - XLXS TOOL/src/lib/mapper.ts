@@ -6,6 +6,7 @@ function findSourceHeader(
   aliases: string[],
   headers: string[],
   rawHeaders: string[],
+  usedIndexes: Set<number>,
 ): {
   header: string;
   index: number;
@@ -13,22 +14,31 @@ function findSourceHeader(
 } | null {
   const candidates = [targetLabel, ...aliases];
 
-  for (const candidate of candidates) {
-    const index = rawHeaders.findIndex((h) => h === candidate);
-    if (index !== -1)
-      return { header: headers[index], index, confidence: "exact" };
-  }
-
+  // Exact match
   for (const candidate of candidates) {
     const index = rawHeaders.findIndex(
-      (h) => normalizeHeader(h) === normalizeHeader(candidate),
+      (h, i) => h === candidate && !usedIndexes.has(i),
     );
     if (index !== -1)
       return { header: headers[index], index, confidence: "exact" };
   }
 
+  // Normalized exact match
   for (const candidate of candidates) {
-    const index = rawHeaders.findIndex((h) => fuzzyMatch(h, candidate));
+    const index = rawHeaders.findIndex(
+      (h, i) =>
+        normalizeHeader(h) === normalizeHeader(candidate) &&
+        !usedIndexes.has(i),
+    );
+    if (index !== -1)
+      return { header: headers[index], index, confidence: "exact" };
+  }
+
+  // Fuzzy match
+  for (const candidate of candidates) {
+    const index = rawHeaders.findIndex(
+      (h, i) => fuzzyMatch(h, candidate) && !usedIndexes.has(i),
+    );
     if (index !== -1)
       return { header: headers[index], index, confidence: "fuzzy" };
   }
@@ -37,12 +47,15 @@ function findSourceHeader(
 }
 
 export function mapColumns(file: ParsedFile, schema: Schema): ColumnMapping[] {
+  const usedIndexes = new Set<number>();
+
   return schema.columns.map((col, targetIndex) => {
     const result = findSourceHeader(
       col.label,
       col.aliases ?? [],
       file.headers,
       file.rawHeaders,
+      usedIndexes,
     );
 
     if (!result) {
@@ -55,6 +68,8 @@ export function mapColumns(file: ParsedFile, schema: Schema): ColumnMapping[] {
         confidence: "missing",
       };
     }
+
+    usedIndexes.add(result.index);
 
     return {
       targetKey: col.key,

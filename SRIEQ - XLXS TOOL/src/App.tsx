@@ -4,6 +4,7 @@ import { ProcessingCard } from "./components/ProcessingCard";
 import { MappingResultCard } from "./components/MappingResultCard";
 import { MovedColumnsCard } from "./components/MovedColumnsCard";
 import { ErrorCard } from "./components/ErrorCard";
+import { SchemaViewer } from "./components/SchemaViewer";
 import { parseXlsx } from "./lib/parser";
 import { mapColumns } from "./lib/mapper";
 import { exportXlsx } from "./lib/exporter";
@@ -11,6 +12,7 @@ import { schema } from "./schemas";
 import type { ColumnMapping } from "./types";
 
 type AppState = "idle" | "processing" | "done" | "error";
+type Tab = "tool" | "schema";
 
 interface ProcessingStep {
   label: string;
@@ -32,6 +34,7 @@ export default function App() {
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [fileName, setFileName] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("tool");
 
   const completeStep = (index: number) => {
     setSteps((prev) =>
@@ -40,10 +43,8 @@ export default function App() {
   };
 
   const handleFile = useCallback(async (file: File) => {
-    const parsed = await parseXlsx(file);
-    console.log("rawHeaders[0]:", parsed.rawHeaders[0]);
-    console.log("headers[0]:", parsed.headers[0]);
     setState("processing");
+    setTab("tool");
     setSteps(STEPS.map((s) => ({ ...s, status: "pending" })));
     setFileName(file.name);
     setError(null);
@@ -96,6 +97,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white flex items-start justify-center p-8 pt-16">
       <div className="w-full max-w-xl flex flex-col gap-6">
+        {/* Header */}
         <div>
           <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
             SRIEQ
@@ -106,33 +108,58 @@ export default function App() {
           <p className="text-sm text-gray-500 mt-1">
             Importe un fichier, reçois le fichier corrigé.
           </p>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mt-4 border-b border-gray-100">
+            {(["tool", "schema"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`text-sm px-4 py-2 border-b-2 transition-colors cursor-pointer bg-transparent ${
+                  tab === t
+                    ? "border-gray-900 text-gray-900 font-medium"
+                    : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                {t === "tool" ? "Outil" : "Schéma attendu"}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {state === "idle" && <FileDropzone onFileParsed={handleFile} />}
-
-        {state === "processing" && (
-          <ProcessingCard fileName={fileName} steps={steps} />
-        )}
-
-        {state === "done" && (
+        {/* Tab : Outil */}
+        {tab === "tool" && (
           <>
-            <MappingResultCard mappings={mappings} />
-            <MovedColumnsCard mappings={mappings} />
-            <button
-              onClick={handleReset}
-              className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-transparent border-none p-0 text-left"
-            >
-              Importer un autre fichier
-            </button>
+            {state === "idle" && <FileDropzone onFileParsed={handleFile} />}
+
+            {state === "processing" && (
+              <ProcessingCard fileName={fileName} steps={steps} />
+            )}
+
+            {state === "done" && (
+              <>
+                <MappingResultCard mappings={mappings} />
+                <MovedColumnsCard mappings={mappings} />
+                <button
+                  onClick={handleReset}
+                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors cursor-pointer bg-transparent border-none p-0 text-left"
+                >
+                  Importer un autre fichier
+                </button>
+              </>
+            )}
+
+            {state === "error" && (
+              <ErrorCard
+                message={error ?? "Erreur inconnue"}
+                onReset={handleReset}
+              />
+            )}
           </>
         )}
 
-        {state === "error" && (
-          <ErrorCard
-            message={error ?? "Erreur inconnue"}
-            onReset={handleReset}
-          />
-        )}
+        {/* Tab : Schéma */}
+        {tab === "schema" && <SchemaViewer />}
       </div>
     </div>
   );
