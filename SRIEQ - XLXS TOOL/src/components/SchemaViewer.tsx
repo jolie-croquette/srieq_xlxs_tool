@@ -1,15 +1,33 @@
-import { schema } from "../schemas";
+import { useNavigate } from "react-router-dom";
+import { Pencil } from "lucide-react";
+import type { Schema, TargetColumn } from "../types";
 
-export function SchemaViewer() {
+interface SchemaViewerProps {
+  schema: Schema;
+  onSchemaUpdate: (columns: TargetColumn[]) => void;
+}
+
+export function SchemaViewer({ schema }: SchemaViewerProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden">
       <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-900">
           Schéma attendu
         </span>
-        <span className="text-xs text-gray-400">
-          {schema.columns.length} colonnes
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            {schema.columns.length} colonnes
+          </span>
+          <button
+            onClick={() => navigate("/schema")}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-2.5 py-1 transition-colors cursor-pointer bg-transparent"
+          >
+            <Pencil className="w-3 h-3" />
+            Modifier
+          </button>
+        </div>
       </div>
 
       <div className="max-h-96 overflow-y-auto">
